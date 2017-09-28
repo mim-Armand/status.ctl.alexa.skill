@@ -6,9 +6,9 @@
 const Alexa = require('alexa-sdk');
 const https = require('https');
 
-const helloMessages = ["hello!"]
-const reprompMessages = ["Reprompt"]
-const unrecognisedResponses = ["What was that again?"]
+const helloMessages = ["Hi! how can I help you today?", "Hello! what can I do for you?", "Hey there! please let me know how I may be able to help you!"]
+const reprompMessages = ["You can say for instance status, and  I'll get that information for you!", "You can ask me for the status of the services on ctl.io"]
+const unrecognisedResponses = ["What was that again?", "Sorry, I could not recognize that, can you repeat?"]
 const APP_ID = process.env.APP_ID;
 const apiUrl = 'https://status.ctl.io/v1/status';
 
@@ -29,7 +29,8 @@ const handlers = {
         console.log('======================== GetPrice')
         fetchPrice().then((d) => {
 
-            let statesList = [[],[],[],[],[]]
+            let statesList = [[],[],[],[],[]];
+            let reportMsg = "";
 
             Object.keys(d.services).map( function(item, index){
                 var st = d.services[item].state;
@@ -47,20 +48,26 @@ const handlers = {
                 }
                 return null;
             })
-            console.log('statesList', statesList)
 
-            //todo: make the text_to_be_spoken according to the result
+            if(statesList[4].length == 0 && statesList[3].length == 0){
+                reportMsg += `All services are operating in good conditions. No minor or major service disruption was detected .`
+            }else{
+                if(statesList[4].length > 0) reportMsg += `There are ${statesList[4].length} service disruptions for ${statesList[4].map((i)=>i)} .`
+                if(statesList[3].length > 0) reportMsg += `There are ${statesList[3].length} partial service disruptions for ${statesList[3].map((i)=>i)} . `
+            }
 
-            this.attributes.speechOutput = `Currently there are ${d.active.length} active and ${d.future.length} future planned maintenance events on the network.`
-                +` There is also`;
+            if(d.active.length > 0) reportMsg += ` there is also ${d.active.length} planned maintenance events currently in active mode . `
+            if(d.future.length > 0) reportMsg += ` There are ${d.future.length} maintenance plans scheduled for future days that may affect some of the services . `
+
+            this.attributes.speechOutput = reportMsg;
             this.response.speak(this.attributes.speechOutput);
             this.response.cardRenderer(
             `Status.CTL.io © mim.Armand`,
-            `Test text`
-            // {
-            //     smallImageUrl: `https://www.cryptocompare.com/media/${coins.imgs[ coins.syms.indexOf(sym) ]}`,
-            //     largeImageUrl: `https://www.cryptocompare.com/media/${coins.imgs[ coins.syms.indexOf(sym) ]}`
-            // }
+                reportMsg,
+            {
+                smallImageUrl: "https://s3.amazonaws.com/random-shit-public/ctl_small.jpg",
+                largeImageUrl: "https://s3.amazonaws.com/random-shit-public/ctl_large.jpg"
+            }
         );
         this.emit(':responseReady');
     })
