@@ -57,3 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# The built Archive for lambda
+Archive.zip
+
+# IntelliJ
+.idea
